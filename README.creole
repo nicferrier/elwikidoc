@@ -1,0 +1,6 @@
+= README =
+
+This is an Emacs Lisp program to generate wiki documentation from
+Emacs Lisp functions.
+
+Right now it only does wikicreole.
