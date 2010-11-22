@@ -140,6 +140,9 @@ Otherwise the BUFFER will be created named like:
           (setq buffer (get-buffer-create (format "*wikidoc-%s*" elisp-prefix)))
           (mapc mapfn lst)
           (switch-to-buffer buffer))
-      (mapc mapfn lst))))
+      (progn
+        (if (use-region-p)
+            (delete-region (region-beginning) (region-end)))
+        (mapc mapfn lst)))))
 
 ;; End
