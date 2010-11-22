@@ -115,6 +115,9 @@ will use the current buffer for BUFFER.
 Otherwise the BUFFER will be created named like:
 
  *wikidoc-ELISP-PREFIX*
+
+If Transient Mark mode is set in the specified buffer the active
+region is killed before the new wiki text is inserted.
 "
   (interactive 
    (let ((elisp-prefix (completing-read "elisp prefix: " obarray 't nil nil nil)))
