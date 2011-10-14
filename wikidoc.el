@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nic@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nic@ferrier.me.uk>
 ;; Created: 5th October 2010
-;; Version: 0.1
+;; Version: 0.2
 ;; Keywords: lisp
 
 ;; This file is NOT part of GNU Emacs.
@@ -86,24 +86,26 @@ This deals with things like quoted LISP forms which can be turned into links"
 
 (defun wikidoc--convert (str)
   "Convert function documentation type doc STR to creole."
-  (let (in-pre
-        )
-    (mapconcat
-     (lambda (line)
-       (cond
-        ((string-match "^ " line)
-         (if in-pre
-             line
-           (progn 
-             (setq in-pre 't)
-             (concat "{{{\n" (wikidoc--convert-line line)))))
-        ((and in-pre (not (string-match "^ " line)))
-         (setq in-pre nil)         
-         (concat "}}}\n" (wikidoc--convert-line line)))
-        ('t 
-         (wikidoc--convert-line line))))
-     (split-string str "\n")
-     "\n")))
+  (let (in-pre)
+    (concat 
+     (mapconcat
+      (lambda (line)
+        (cond
+         ((string-match "^ " line)
+          (if in-pre
+              line
+            (progn 
+              (setq in-pre 't)
+              (concat "{{{\n" (wikidoc--convert-line line)))))
+         ((and in-pre (not (string-match "^ " line)))
+          (setq in-pre nil)         
+          (concat "}}}\n" (wikidoc--convert-line line)))
+         ('t 
+          (wikidoc--convert-line line))))
+      (split-string str "\n")
+      "\n")
+     ;; end any pre that we started
+     (if in-pre "\n}}}\n"))))
 
 ;;;###autoload
 (defun wikidoc-insert (elisp-prefix buffer)
