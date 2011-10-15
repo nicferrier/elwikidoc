@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nic@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nic@ferrier.me.uk>
 ;; Created: 5th October 2010
-;; Version: 0.4
+;; Version: 0.5
 ;; Keywords: lisp
 
 ;; This file is NOT part of GNU Emacs.
@@ -196,10 +196,10 @@ region is killed before the new wiki text is inserted.
                               ((or
                                 (equal '&optional arg)
                                 (equal '&rest arg))
-                               (format "{{{%s}}}" arg))
+                               (format "%s" arg))
                               ('t
                                (add-to-list 'arglist arg)
-                               (format "//%s//" arg))))
+                               (format "%s" arg))))
                            args
                            " "))
                         (let ((docbody (documentation fn)))  ;; the doc body
