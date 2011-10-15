@@ -1,6 +1,6 @@
 ;;; wikidoc.el --- use elisp doc strings to make other documentation
 
-;; Copyright (C) 2010  Nic Ferrier
+;; Copyright (C) 2010, 2011  Nic Ferrier
 
 ;; Author: Nic Ferrier <nic@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nic@ferrier.me.uk>
@@ -53,6 +53,8 @@
 ;; This is the main text. It can include references to other 'functions'.
 ;; When there are 'two' references 'on the same line' it should
 ;; still work.")
+
+;;; Code:
 
 ;;;###autoload
 (defun wikidoc-grab-list (prefix &optional no-private)
@@ -150,4 +152,4 @@ region is killed before the new wiki text is inserted.
             (delete-region (region-beginning) (region-end)))
         (mapc mapfn lst)))))
 
-;; End
+;;; wikidoc.el ends here
