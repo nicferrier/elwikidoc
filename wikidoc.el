@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nic@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nic@ferrier.me.uk>
 ;; Created: 5th October 2010
-;; Version: 0.2
+;; Version: 0.3
 ;; Keywords: lisp
 
 ;; This file is NOT part of GNU Emacs.
@@ -122,7 +122,7 @@ If Transient Mark mode is set in the specified buffer the active
 region is killed before the new wiki text is inserted.
 "
   (interactive 
-   (let ((elisp-prefix (completing-read "elisp prefix: " obarray 't nil nil nil)))
+   (let ((elisp-prefix (completing-read "elisp prefix: " obarray nil nil nil nil)))
      (list (intern elisp-prefix)    
            (if current-prefix-arg
                (current-buffer)
