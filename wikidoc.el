@@ -186,30 +186,33 @@ region is killed before the new wiki text is inserted.
   (let* ((lst (sort
                (wikidoc-grab-list elisp-prefix 't)
                'string-lessp))
-         (mapfn (lambda (fn)
-                  ;; We're relying on dynamic scope here to set buffer later
-                  (with-current-buffer buffer
-                    (insert
-                     (let (arglist)
-                       (format
-                        "=== %s %s ===\n\n%s\n\n\n"
-                        (symbol-name fn) ;; the func name
-                        (let* ((args (help-function-arglist fn))) ;; the arglist
-                          (mapconcat
-                           (lambda (arg)
-                             (cond
-                              ((or
-                                (equal '&optional arg)
-                                (equal '&rest arg))
-                               (format "%s" arg))
-                              ('t
-                               (add-to-list 'arglist arg)
-                               (format "%s" arg))))
-                           args
-                           " "))
-                        (let ((docbody (documentation fn)))  ;; the doc body
-                          (wikidoc--convert docbody arglist))
-                        )))))))
+         (mapfn
+          (lambda (fn)
+            ;; We're relying on dynamic scope here to set buffer later
+            (with-current-buffer buffer
+              (let* (arglist
+                     (args (help-function-arglist fn))
+                     (docbody (documentation fn))
+                     (fmted
+                      (format
+                       "=== %s %s ===\n\n%s\n\n\n"
+                       (symbol-name fn) ;; the func name
+                       (mapconcat
+                        (lambda (arg)
+                          (cond
+                           ((or
+                             (equal '&optional arg)
+                             (equal '&rest arg))
+                            (format "%s" arg))
+                           ('t
+                            (add-to-list 'arglist arg)
+                            (format "%s" arg))))
+                        args
+                        " ")
+                       (when docbody
+                         (wikidoc--convert docbody arglist)))))
+                (when (and docbody fmted)
+                  (insert fmted)))))))
     (if (not (bufferp buffer))
         (progn
           (setq buffer (get-buffer-create (format "*wikidoc-%s*" elisp-prefix)))
