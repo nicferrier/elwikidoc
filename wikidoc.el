@@ -39,12 +39,12 @@
 ;;
 ;; This codes uses the emacs style of:
 ;;
-;;    wikidoc---private-function 
+;;    wikidoc---private-function
 ;;
 ;; for private functions.
 ;;
 ;;; Examples
-;; 
+;;
 ;; This is the main paragraph converter:
 ;;
 ;; (wikidoc--convert "this is a function.
@@ -63,7 +63,7 @@
   "Grab a list or functions matching PREFIX possibly with NO-PRIVATE"
   (let ((prefix-sym (symbol-name prefix))
         (res '()))
-    (mapatoms 
+    (mapatoms
      (lambda (atom)
        (let ((sn (symbol-name atom)))
          (and (fboundp atom)
@@ -98,23 +98,23 @@ The list should be of symbols, not strings."
                     nil)))
     (save-match-data
       (while (string-match ".*\\('[^']+'\\).*" line)
-        (setq line (replace-match 
+        (setq line (replace-match
                     (format "[[%s]]" (let ((name (match-string 1 line)))
-                                       (save-match-data 
+                                       (save-match-data
                                          (string-match "'\\([^']+\\)'" name)
                                          (match-string 1 name))))
                     nil nil line 1)))
-      (if arglstre 
-          (replace-regexp-in-string 
-           arglstre 
+      (if arglstre
+          (replace-regexp-in-string
+           arglstre
            (lambda (matched)
              (format "//%s//" (downcase matched)))
            line
            't
            nil)
         line
-      ))))
-  
+        ))))
+
 (ert-deftest wikidoc-test-convert-line ()
   "Can we convert lines with lisp refs and arguments?"
   (let ((l '("This is a line of documentation with 'lisp-references'" .
@@ -139,20 +139,22 @@ ARGUMENT -> //argument//
 
 The list should be of symbols, not strings."
   (let (in-pre)
-    (concat 
+    (concat
      (mapconcat
       (lambda (line)
         (cond
          ((string-match "^ " line)
           (if in-pre
               line
-            (progn 
+            (progn
               (setq in-pre 't)
-              (concat "{{{\n" (wikidoc--convert-line line arguments-to-mangle)))))
+              (concat
+               "{{{\n"
+               (wikidoc--convert-line line arguments-to-mangle)))))
          ((and in-pre (not (string-match "^ " line)))
-          (setq in-pre nil)         
+          (setq in-pre nil)
           (concat "}}}\n" (wikidoc--convert-line line arguments-to-mangle)))
-         ('t 
+         ('t
           (wikidoc--convert-line line arguments-to-mangle))))
       (split-string str "\n")
       "\n")
@@ -164,7 +166,7 @@ The list should be of symbols, not strings."
   "Make creole doc for functions beginning with ELISP-PREFIX in BUFFER.
 
 When called interactively with a PREFIX argument this function
-will use the current buffer for BUFFER. 
+will use the current buffer for BUFFER.
 
 Otherwise the BUFFER will be created named like:
 
@@ -173,26 +175,29 @@ Otherwise the BUFFER will be created named like:
 If Transient Mark mode is set in the specified buffer the active
 region is killed before the new wiki text is inserted.
 "
-  (interactive 
-   (let ((elisp-prefix (completing-read "elisp prefix: " obarray nil nil nil nil)))
-     (list (intern elisp-prefix)    
+  (interactive
+   (let ((elisp-prefix
+          (completing-read "elisp prefix: "
+                           obarray nil nil nil nil)))
+     (list (intern elisp-prefix)
            (if current-prefix-arg
                (current-buffer)
              nil))))
-  (let* ((lst (sort 
+  (let* ((lst (sort
                (wikidoc-grab-list elisp-prefix 't)
                'string-lessp))
          (mapfn (lambda (fn)
-                  (with-current-buffer buffer ;; We're relying on dynamic scope here to set buffer later
-                    (insert 
+                  ;; We're relying on dynamic scope here to set buffer later
+                  (with-current-buffer buffer
+                    (insert
                      (let (arglist)
-                       (format 
-                        "=== %s %s ===\n\n%s\n\n\n" 
+                       (format
+                        "=== %s %s ===\n\n%s\n\n\n"
                         (symbol-name fn) ;; the func name
                         (let* ((args (help-function-arglist fn))) ;; the arglist
                           (mapconcat
                            (lambda (arg)
-                             (cond 
+                             (cond
                               ((or
                                 (equal '&optional arg)
                                 (equal '&rest arg))
