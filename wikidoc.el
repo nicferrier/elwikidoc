@@ -223,4 +223,5 @@ region is killed before the new wiki text is inserted.
             (delete-region (region-beginning) (region-end)))
         (mapc mapfn lst)))))
 
+(provide 'wikidoc)
 ;;; wikidoc.el ends here
