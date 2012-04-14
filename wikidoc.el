@@ -33,7 +33,7 @@
 
 ;;; Source code
 ;;
-;; The wikidoc source code is not in a public repo yet.
+;; https://github.com/nicferrier/elwikidoc
 
 ;;; Style note
 ;;
