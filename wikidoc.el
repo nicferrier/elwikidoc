@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nic@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nic@ferrier.me.uk>
 ;; Created: 5th October 2010
-;; Version: 0.6
+;; Version: 0.7
 ;; Keywords: lisp
 
 ;; This file is NOT part of GNU Emacs.
@@ -57,6 +57,7 @@
 ;;; Code:
 
 (require 'ert)
+(eval-when-compile (require 'cl))
 
 ;;;###autoload
 (defun wikidoc-grab-list (prefix &optional no-private)
@@ -87,47 +88,43 @@ detected and replaced like:
 ARGUMENT -> //argument//
 
 The list should be of symbols, not strings."
-  (let ((arglstre (if arguments-to-mangle
-                      (concat "\\("
-                              (mapconcat
-                               (lambda (sym)
-                                 (upcase (symbol-name sym)))
-                               arguments-to-mangle
-                               "\\|")
-                              "\\)")
-                    nil)))
+  (let ((case-fold-search nil)
+        (arglstre
+         (when arguments-to-mangle
+           (regexp-opt (loop for sym in arguments-to-mangle
+                             collect (upcase (symbol-name sym)))))))
     (save-match-data
-      (while (string-match ".*\\('[^']+'\\).*" line)
-        (setq line (replace-match
-                    (format "[[%s]]" (let ((name (match-string 1 line)))
-                                       (save-match-data
-                                         (string-match "'\\([^']+\\)'" name)
-                                         (match-string 1 name))))
-                    nil nil line 1)))
+      (while (string-match ".*\\(`[^']+'\\).*" line)
+        (setq line
+              (replace-match
+               (format "[[%s]]"
+                       (let ((name (match-string 1 line)))
+                         (save-match-data
+                           (string-match "`\\([^']+\\)'" name)
+                           (match-string 1 name))))
+               nil nil line 1)))
       (if arglstre
           (replace-regexp-in-string
            arglstre
-           (lambda (matched)
-             (format "//%s//" (downcase matched)))
-           line
-           't
-           nil)
-        line
-        ))))
+           (lambda (matched) (format "//%s//" (downcase matched)))
+           line t nil)
+        line))))
 
 (ert-deftest wikidoc-test-convert-line ()
   "Can we convert lines with lisp refs and arguments?"
-  (let ((l '("This is a line of documentation with 'lisp-references'" .
+  (let ((l '("This is a line of documentation with `lisp-references'" .
              "This is a line of documentation with [[lisp-references]]")))
-    (should (equal (cdr l)
-                   (wikidoc--convert-line (car l))))
-    )
-  (let ((l '("A line of documentation with 2 args: CAR and CDR" .
-             "A line of documentation with 2 args: //car// and //cdr//")))
-    (should (equal (cdr l)
-                   (wikidoc--convert-line (car l) '(car cdr))))
-    )
-  )
+    (should
+     (equal
+      (cdr l)
+      (wikidoc--convert-line (car l)))))
+  (let ((l
+         '("A line of doc with 2 args of car and cdr: CAR and CDR" .
+           "A line of doc with 2 args of car and cdr: //car// and //cdr//")))
+    (should
+     (equal
+      (cdr l)
+      (wikidoc--convert-line (car l) '(car cdr))))))
 
 (defun wikidoc--convert (str &optional arguments-to-mangle)
   "Convert function documentation type doc STR to creole.
