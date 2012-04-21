@@ -173,53 +173,53 @@ The list should be of symbols, not strings."
      (if in-pre "\n}}}\n"))))
 
 (defun wikidoc--convert-fn (fn)
-  "Converter function for documentation of FN to WikiCreole."
-  ;; We're relying on dynamic scope here to set buffer later
-  (with-current-buffer buffer
-    (let* (arglist
-           (fundoc-list
-            (or
-             (help-split-fundoc
-              (documentation fn) nil)
-             (cons "()" (documentation fn))))
-           (args
-            (or
-             (cdar
-              (read-from-string
-               (downcase
-                (car fundoc-list))))
-             (help-function-arglist fn t)))
-           (docbody (cdr fundoc-list))
-           (fmted
-            (format
-             "=== %s %s ===\n\n%s\n\n\n"
-             (symbol-name fn) ;; the func name
-             (mapconcat
-              (lambda (arg)
-                (cond
-                 ((or
-                   (equal '&optional arg)
-                   (equal '&key arg)
-                   (equal '&rest arg))
-                  (format "%s" arg))
-                 ((listp arg)
-                  (add-to-list 'arglist (car arg))
-                  (format "%s //(default: %s)//"
-                          (car arg)
-                          (cadr arg)))
-                 ('t
-                  (add-to-list 'arglist arg)
-                  (format "%s" arg))))
-              (if (and (listp args)
-                       (listp (car args)))
-                  (car args)
-                args)
-              " ")
-             (when docbody
-               (wikidoc--convert docbody arglist)))))
-      (when (and docbody fmted)
-        (insert fmted)))))
+  "Converter function for documentation of FN to WikiCreole.
 
+The documentation is written, in WikiCreole form, into the
+current buffer."
+  (let* (arglist
+         (fundoc-list
+          (or
+           (help-split-fundoc
+            (documentation fn) nil)
+           (cons "()" (documentation fn))))
+         (args
+          (or
+           (cdar
+            (read-from-string
+             (downcase
+              (car fundoc-list))))
+           (help-function-arglist fn t)))
+         (docbody (cdr fundoc-list))
+         (fmted
+          (format
+           "=== %s %s ===\n\n%s\n\n\n"
+           (symbol-name fn) ;; the func name
+           (mapconcat
+            (lambda (arg)
+              (cond
+               ((or
+                 (equal '&optional arg)
+                 (equal '&key arg)
+                 (equal '&rest arg))
+                (format "%s" arg))
+               ((listp arg)
+                (add-to-list 'arglist (car arg))
+                (format "%s //(default: %s)//"
+                        (car arg)
+                        (cadr arg)))
+               ('t
+                (add-to-list 'arglist arg)
+                (format "%s" arg))))
+            (if (and (listp args)
+                     (listp (car args)))
+                (car args)
+              args)
+            " ")
+           (when docbody
+             (wikidoc--convert docbody arglist)))))
+    (when (and docbody fmted)
+      (insert fmted))))
 
 ;;;###autoload
 (defun wikidoc-insert (elisp-prefix buffer)
@@ -249,12 +249,14 @@ region is killed before the new wiki text is inserted.
     (if (not (bufferp buffer))
         (progn
           (setq buffer (get-buffer-create (format "*wikidoc-%s*" elisp-prefix)))
-          (mapc 'wikidoc--convert-fn lst)
+          (with-current-buffer buffer
+            (mapc 'wikidoc--convert-fn lst))
           (switch-to-buffer buffer))
       (progn
-        (if (use-region-p)
-            (delete-region (region-beginning) (region-end)))
-        (mapc mapfn lst)))))
+        (with-current-buffer buffer
+          (if (use-region-p)
+              (delete-region (region-beginning) (region-end)))
+          (mapc 'wikidoc--convert-fn  lst))))))
 
 (provide 'wikidoc)
 
