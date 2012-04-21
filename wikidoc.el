@@ -1,11 +1,11 @@
 ;;; wikidoc.el --- use elisp doc strings to make other documentation
 
-;; Copyright (C) 2010, 2011  Nic Ferrier
+;; Copyright (C) 2010, 2011, 2012  Nic Ferrier
 
 ;; Author: Nic Ferrier <nic@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nic@ferrier.me.uk>
 ;; Created: 5th October 2010
-;; Version: 0.7
+;; Version: 0.8
 ;; Keywords: lisp
 
 ;; This file is NOT part of GNU Emacs.
@@ -88,11 +88,25 @@ detected and replaced like:
 ARGUMENT -> //argument//
 
 The list should be of symbols, not strings."
-  (let ((case-fold-search nil)
-        (arglstre
-         (when arguments-to-mangle
-           (regexp-opt (loop for sym in arguments-to-mangle
-                             collect (upcase (symbol-name sym)))))))
+  (let* ((case-fold-search nil)
+         (arglstre
+          (when arguments-to-mangle
+            (regexp-opt
+             (loop for arg in
+                   (cond
+                    ;; CL style arguments are a list of lists
+                    ((and (listp arguments-to-mangle)
+                          (listp (car arguments-to-mangle)))
+                     (car arguments-to-mangle))
+                    ;; Normal function args are just a list
+                    (t
+                     arguments-to-mangle))
+                   collect
+                  (cond
+                   ((listp arg)
+                    (upcase (symbol-name (car arg))))
+                   ((symbolp arg)
+                    (upcase (symbol-name arg)))))))))
     (save-match-data
       (while (string-match ".*\\(`[^']+'\\).*" line)
         (setq line
@@ -158,6 +172,55 @@ The list should be of symbols, not strings."
      ;; end any pre that we started
      (if in-pre "\n}}}\n"))))
 
+(defun wikidoc--convert-fn (fn)
+  "Converter function for documentation of FN to WikiCreole."
+  ;; We're relying on dynamic scope here to set buffer later
+  (with-current-buffer buffer
+    (let* (arglist
+           (fundoc-list
+            (or
+             (help-split-fundoc
+              (documentation fn) nil)
+             (cons "()" (documentation fn))))
+           (args
+            (or
+             (cdar
+              (read-from-string
+               (downcase
+                (car fundoc-list))))
+             (help-function-arglist fn t)))
+           (docbody (cdr fundoc-list))
+           (fmted
+            (format
+             "=== %s %s ===\n\n%s\n\n\n"
+             (symbol-name fn) ;; the func name
+             (mapconcat
+              (lambda (arg)
+                (cond
+                 ((or
+                   (equal '&optional arg)
+                   (equal '&key arg)
+                   (equal '&rest arg))
+                  (format "%s" arg))
+                 ((listp arg)
+                  (add-to-list 'arglist (car arg))
+                  (format "%s //(default: %s)//"
+                          (car arg)
+                          (cadr arg)))
+                 ('t
+                  (add-to-list 'arglist arg)
+                  (format "%s" arg))))
+              (if (and (listp args)
+                       (listp (car args)))
+                  (car args)
+                args)
+              " ")
+             (when docbody
+               (wikidoc--convert docbody arglist)))))
+      (when (and docbody fmted)
+        (insert fmted)))))
+
+
 ;;;###autoload
 (defun wikidoc-insert (elisp-prefix buffer)
   "Make creole doc for functions beginning with ELISP-PREFIX in BUFFER.
@@ -182,38 +245,11 @@ region is killed before the new wiki text is inserted.
              nil))))
   (let* ((lst (sort
                (wikidoc-grab-list elisp-prefix 't)
-               'string-lessp))
-         (mapfn
-          (lambda (fn)
-            ;; We're relying on dynamic scope here to set buffer later
-            (with-current-buffer buffer
-              (let* (arglist
-                     (args (help-function-arglist fn))
-                     (docbody (documentation fn))
-                     (fmted
-                      (format
-                       "=== %s %s ===\n\n%s\n\n\n"
-                       (symbol-name fn) ;; the func name
-                       (mapconcat
-                        (lambda (arg)
-                          (cond
-                           ((or
-                             (equal '&optional arg)
-                             (equal '&rest arg))
-                            (format "%s" arg))
-                           ('t
-                            (add-to-list 'arglist arg)
-                            (format "%s" arg))))
-                        args
-                        " ")
-                       (when docbody
-                         (wikidoc--convert docbody arglist)))))
-                (when (and docbody fmted)
-                  (insert fmted)))))))
+               'string-lessp)))
     (if (not (bufferp buffer))
         (progn
           (setq buffer (get-buffer-create (format "*wikidoc-%s*" elisp-prefix)))
-          (mapc mapfn lst)
+          (mapc 'wikidoc--convert-fn lst)
           (switch-to-buffer buffer))
       (progn
         (if (use-region-p)
@@ -221,4 +257,5 @@ region is killed before the new wiki text is inserted.
         (mapc mapfn lst)))))
 
 (provide 'wikidoc)
+
 ;;; wikidoc.el ends here
