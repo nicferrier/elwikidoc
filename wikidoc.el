@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nic@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nic@ferrier.me.uk>
 ;; Created: 5th October 2010
-;; Version: 0.8
+;; Version: 0.8.1
 ;; Keywords: lisp
 
 ;; This file is NOT part of GNU Emacs.
@@ -205,7 +205,7 @@ current buffer."
                 (format "%s" arg))
                ((listp arg)
                 (add-to-list 'arglist (car arg))
-                (format "%s //(default: %s)//"
+                (format "%s (%S)"
                         (car arg)
                         (cadr arg)))
                ('t
