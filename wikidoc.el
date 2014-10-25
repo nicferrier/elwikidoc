@@ -56,7 +56,6 @@
 
 ;;; Code:
 
-(require 'ert)
 (eval-when-compile (require 'cl))
 
 ;;;###autoload
@@ -123,22 +122,6 @@ The list should be of symbols, not strings."
            (lambda (matched) (format "//%s//" (downcase matched)))
            line t nil)
         line))))
-
-(ert-deftest wikidoc-test-convert-line ()
-  "Can we convert lines with lisp refs and arguments?"
-  (let ((l '("This is a line of documentation with `lisp-references'" .
-             "This is a line of documentation with [[lisp-references]]")))
-    (should
-     (equal
-      (cdr l)
-      (wikidoc--convert-line (car l)))))
-  (let ((l
-         '("A line of doc with 2 args of car and cdr: CAR and CDR" .
-           "A line of doc with 2 args of car and cdr: //car// and //cdr//")))
-    (should
-     (equal
-      (cdr l)
-      (wikidoc--convert-line (car l) '(car cdr))))))
 
 (defun wikidoc--convert (str &optional arguments-to-mangle)
   "Convert function documentation type doc STR to creole.
