@@ -6,7 +6,7 @@
 ;; Maintainer: Nic Ferrier <nic@ferrier.me.uk>
 ;; Created: 5th October 2010
 ;; Package-requires: ((s.el "1.9.0"))
-;; Version: 0.8.1
+;; Version: 0.9
 ;; Keywords: lisp
 
 ;; This file is NOT part of GNU Emacs.
