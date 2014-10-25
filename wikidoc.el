@@ -75,6 +75,15 @@
      obarray)
     res))
 
+(defconst wikidoc--convert-line-creole-name-reference "[[%s]]")
+(defconst wikidoc--convert-line-creole-arg-reference "//%s//")
+
+(defconst wikidoc--convert-line-name-reference
+  wikidoc--convert-line-creole-name-reference)
+
+(defconst wikidoc--convert-line-arg-reference
+  wikidoc--convert-line-creole-arg-reference)
+
 (defun wikidoc--convert-line (line &optional arguments-to-mangle)
   "Converts a single LINE of function documentation.
 
@@ -110,16 +119,20 @@ The list should be of symbols, not strings."
       (while (string-match ".*\\(`[^']+'\\).*" line)
         (setq line
               (replace-match
-               (format "[[%s]]"
-                       (let ((name (match-string 1 line)))
-                         (save-match-data
-                           (string-match "`\\([^']+\\)'" name)
-                           (match-string 1 name))))
+               (format
+                wikidoc--convert-line-name-reference
+                (let ((name (match-string 1 line)))
+                  (save-match-data
+                    (string-match "`\\([^']+\\)'" name)
+                    (match-string 1 name))))
                nil nil line 1)))
       (if arglstre
           (replace-regexp-in-string
            arglstre
-           (lambda (matched) (format "//%s//" (downcase matched)))
+           (lambda (matched)
+             (format
+              wikidoc--convert-line-arg-reference
+              (downcase matched)))
            line t nil)
         line))))
 
@@ -155,6 +168,43 @@ The list should be of symbols, not strings."
      ;; end any pre that we started
      (if in-pre "\n}}}\n"))))
 
+(defconst wikidoc--convert-fn-creole-template
+  "=== ${name} ${args} ===\n\n${description}\n\n\n")
+
+(defconst wikidoc--convert-fn-template  wikidoc--convert-fn-creole-template
+  "By default this is `wikidoc--convert-fn-creole-template'.
+
+The `s-format' keys used are:
+
+  NAME - the name of the function
+  ARGS - the arg list of the function
+  DESCRIPTION - the function doc body
+
+Each can be put in the template in whatever way you like")
+
+(defun wikidoc--convert-args (args)
+  (mapconcat
+   (lambda (arg)
+     (cond
+       ((or
+         (equal '&optional arg)
+         (equal '&key arg)
+         (equal '&rest arg))
+        (format "%s" arg))
+       ((listp arg)
+        (add-to-list 'arglist (car arg))
+        (format "%s (%S)"
+                (car arg)
+                (cadr arg)))
+       ('t
+        (add-to-list 'arglist arg)
+        (format "%s" arg))))
+   (if (and (listp args)
+            (listp (car args)))
+       (car args)
+       args)
+   " "))
+
 (defun wikidoc--convert-fn (fn)
   "Converter function for documentation of FN to WikiCreole.
 
@@ -175,32 +225,14 @@ current buffer."
            (help-function-arglist fn t)))
          (docbody (cdr fundoc-list))
          (fmted
-          (format
-           "=== %s %s ===\n\n%s\n\n\n"
-           (symbol-name fn) ;; the func name
-           (mapconcat
-            (lambda (arg)
-              (cond
-               ((or
-                 (equal '&optional arg)
-                 (equal '&key arg)
-                 (equal '&rest arg))
-                (format "%s" arg))
-               ((listp arg)
-                (add-to-list 'arglist (car arg))
-                (format "%s (%S)"
-                        (car arg)
-                        (cadr arg)))
-               ('t
-                (add-to-list 'arglist arg)
-                (format "%s" arg))))
-            (if (and (listp args)
-                     (listp (car args)))
-                (car args)
-              args)
-            " ")
-           (when docbody
-             (wikidoc--convert docbody arglist)))))
+          (s-format
+           wikidoc--convert-fn-template
+           'aget
+           `(("name" . ,(symbol-name fn)) ;; the func name
+             ("args" . ,(wikidoc--convert-args args)) ;; the args
+             ("description" . 
+                            ,(when docbody
+                                   (wikidoc--convert docbody arglist)))))))
     (when (and docbody fmted)
       (insert fmted))))
 
@@ -240,6 +272,17 @@ region is killed before the new wiki text is inserted.
           (if (use-region-p)
               (delete-region (region-beginning) (region-end)))
           (mapc 'wikidoc--convert-fn  lst))))))
+
+
+(defun wikidoc-rst-example ()
+  "This is just an example function. Check the source."
+
+  ;; rebind the template variables to make rst come out
+
+  (let ((wikidoc--convert-fn-template
+         "\n\n.. el:function:: `${name}' ${args}\n\t${description}\n")
+        (wikidoc--convert-line-arg-reference "``%s''"))
+    (wikidoc-insert 'gh-issues- (current-buffer))))
 
 (provide 'wikidoc)
 
