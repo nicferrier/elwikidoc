@@ -5,6 +5,7 @@
 ;; Author: Nic Ferrier <nic@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nic@ferrier.me.uk>
 ;; Created: 5th October 2010
+;; Package-requires: ((s.el "1.9.0"))
 ;; Version: 0.8.1
 ;; Keywords: lisp
 
@@ -56,6 +57,7 @@
 
 ;;; Code:
 
+(require 's)
 (eval-when-compile (require 'cl))
 
 ;;;###autoload
